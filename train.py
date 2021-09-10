@@ -11,6 +11,9 @@ pixel_size = 128
 block_depth = 2
 
 batch_size = 8
+steps_per_epoch = 1000
+epochs = 1000
+
 steps = 20
 
 residual = False
@@ -260,10 +263,13 @@ if __name__ == "__main__":
     )
 
     trainer.fit(
-        datasets[0], steps_per_epoch=1000, epochs=1000,
+        datasets[0],
+        epochs=epochs,
+        steps_per_epoch=steps_per_epoch,
         callbacks=[
             tf.keras.callbacks.LambdaCallback(
-                on_epoch_begin=log_sample
+                on_epoch_begin=log_sample,
+                on_train_end=lambda _: log_sample(epochs, {})
             )
         ]
     )
