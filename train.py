@@ -231,7 +231,22 @@ def log_sample(epochs, logs):
 
 if __name__ == "__main__":
     name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    summary_writer = tf.summary.create_file_writer(os.path.join("logs", name))
+    logs_basepath = "logs"
+    logs_path = os.path.join(logs_basepath, name)
+    current_path = os.path.join(logs_basepath, "current")
+    try:
+        os.unlink(current_path)
+    except OSError:
+        pass
+    os.symlink(
+        os.path.relpath(
+            logs_path,
+            logs_basepath,
+        ),
+        current_path
+    )
+    print(f"logs: {logs_path}")
+    summary_writer = tf.summary.create_file_writer(logs_path)
 
     dataset_example = next(iter(datasets[0]))[0]
     loss = identity(
