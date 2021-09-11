@@ -273,6 +273,9 @@ if __name__ == "__main__":
             tf.keras.callbacks.LambdaCallback(
                 on_epoch_begin=log_sample,
                 on_train_end=lambda _: log_sample(epochs, {})
+            ),
+            tf.keras.callbacks.TensorBoard(
+                log_dir=f'./tensorboard-callback-logs/{name}', profile_batch=5,
             )
         ]
     )
