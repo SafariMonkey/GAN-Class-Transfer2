@@ -196,8 +196,11 @@ for folder in classes:
     dataset = dataset.map(load_file).batch(batch_size).prefetch(8)
     datasets += [dataset]
 
-@tf.function
 def log_sample(epochs, logs):
+    _log_sample(tf.constant(epochs, dtype='int64'))
+
+@tf.function(input_signature=(tf.TensorSpec((), dtype='int64'),))
+def _log_sample(epochs):
     with summary_writer.as_default():
         identity = denoiser((
             example_image[0][None], 
