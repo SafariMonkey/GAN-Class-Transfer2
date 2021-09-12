@@ -1,6 +1,7 @@
 
 import datetime, os
 import tensorflow as tf
+import itertools
 
 dataset_pattern = "../Datasets/safebooru_r63_256/train/female/*"
 example_image_path = "../Datasets/safebooru_r63_256/train/female/"\
@@ -234,6 +235,8 @@ def _log_sample(epochs):
                 tf.summary.image('step_0.75', fake * 0.5 + 0.5, epochs, 4)
         tf.summary.image('fake', fake * 0.5 + 0.5, epochs, 4)
         tf.summary.image('sample', sample * 0.5 + 0.5, epochs, 4)
+        dataset_examples = tf.stack(list(v[0][0] for v in itertools.islice(iter(datasets[0]), 4)))
+        tf.summary.image('dataset_example', dataset_examples * 0.5 + 0.5, epochs, 4)
 
 if __name__ == "__main__":
     name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
