@@ -18,8 +18,7 @@ epochs = 1000
 
 steps = 20
 
-residual = False
-concat = True
+skip_mode='concat'
 
 mixed_precision = False
 
@@ -39,24 +38,27 @@ optimizer = tf.keras.optimizers.Adam(1e-5)
 if mixed_precision:
     optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
 
-class Residual(tf.keras.layers.Layer):
-    def __init__(self, module):
+class Skip(tf.keras.layers.Layer):
+    def __init__(self, module, mode):
         super().__init__()
 
         self.module = module
+        self.mode = mode
 
     def build(self, input_shape):
         self.module.build(input_shape)
-        if residual or concat:
+        if self.mode in ['residual', 'concat']:
             self.dense = tf.keras.layers.Dense(input_shape[-1], use_bias=False)
 
     def call(self, input):
-        if residual:
+        if self.mode == 'residual':
             return input + self.dense(self.module(input))
-        elif concat:
+        elif self.mode == 'concat':
             return self.dense(tf.concat([self.module(input), input], -1))
-        else:
+        if self.mode == 'identity':
             return self.module(input)
+        else:
+            raise ValueError(f"Unknown residual mode {self.mode}")
 
 class Block(tf.keras.layers.Layer):
     def __init__(self, filters, dilation = 1):
@@ -67,10 +69,10 @@ class Block(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         self.module = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(
+            Skip(tf.keras.layers.Conv2D(
                 self.filters, 3, 1, 'same', activation='relu', 
-                dilation_rate=(self.dilation, self.dilation)
-            ) for i in range(block_depth)
+                dilation_rate=(self.dilation, self.dilation),
+            ), mode=skip_mode) for i in range(block_depth)
         ])
         self.module.build(input_shape)
 
@@ -132,15 +134,13 @@ class Denoiser(tf.keras.Model):
         self.encoder = Encoder()
         self.middle = Block(pixel_size)
         for i in range(7):
-            self.middle = Residual(
-                tf.keras.Sequential([
-                    DownShuffle(),
-                    Block(pixel_size),
-                    self.middle, 
-                    Block(pixel_size),
-                    UpShuffle(),
-                ])
-            )
+            self.middle = Skip(tf.keras.Sequential([
+                DownShuffle(),
+                Block(pixel_size),
+                self.middle, 
+                Block(pixel_size),
+                UpShuffle(),
+            ]), mode=skip_mode)
         self.middle = tf.keras.Sequential([
             Block(pixel_size),
             self.middle,
