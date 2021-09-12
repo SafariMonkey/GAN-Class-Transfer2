@@ -175,7 +175,7 @@ denoiser = Denoiser()
 trainer = Trainer(denoiser)
 
 def load_file(file, crop=True):
-    image = tf.image.decode_jpeg(tf.io.read_file(file))[:, :, :3]
+    image = tf.image.decode_jpeg(tf.io.read_file(file), 3)[:, :, :3]
     if crop:
         image = tf.image.random_crop(image, [size, size, 3])
     image = tf.cast(image, tf.float32) / 128 - 1
