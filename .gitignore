@@ -3,4 +3,4 @@
 
 !*.py
 !.gitignore
-logs/current
+/*logs*

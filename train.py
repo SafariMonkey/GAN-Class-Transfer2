@@ -1,7 +1,8 @@
 
-import datetime, os
+import datetime, os, shutil
 import tensorflow as tf
 import itertools
+import glob
 
 dataset_pattern = "../Datasets/safebooru_r63_256/train/female/*"
 example_image_path = "../Datasets/safebooru_r63_256/train/female/"\
@@ -242,6 +243,7 @@ if __name__ == "__main__":
     name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     logs_basepath = "logs"
     logs_path = os.path.join(logs_basepath, name)
+    os.mkdir(logs_path)
     current_path = os.path.join(logs_basepath, "current")
     try:
         os.unlink(current_path)
@@ -255,6 +257,8 @@ if __name__ == "__main__":
         current_path
     )
     print(f"logs: {logs_path}")
+    for file in glob.glob(f"{os.path.dirname(__file__)}/*.py"):
+        shutil.copy(file, f"{logs_path}/")
     summary_writer = tf.summary.create_file_writer(logs_path)
 
     dataset_example = next(iter(datasets[0]))[0]
