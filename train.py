@@ -4,9 +4,15 @@ import tensorflow as tf
 import itertools
 import glob
 
-dataset_pattern = "../Datasets/safebooru_r63_256/train/female/*"
-example_image_path = "../Datasets/safebooru_r63_256/train/female/"\
-"00af2f4796bcf58f445ab78e4f8a42f4931c28eec024de0e79872fa019575c5f.png"
+dataset_path = "/mnt/Elements/derpi/images-postprocessed/256-on-shorter-side/png-srgb-to23-sym"
+
+dataset_pattern = f"{dataset_path}""/{:02d}/*.*"
+train_pattern, val_pattern = [], []
+for i in range(100):
+    d = val_pattern if i % 5 == 0 else train_pattern
+    d.append(dataset_pattern.format(i))
+
+example_image_path = f"{dataset_path}/22/0002922.png"
 
 size = 256
 pixel_size = 128
@@ -183,20 +189,17 @@ def load_file(file, crop=True):
     image = tf.cast(image, tf.float32) / 128 - 1
     return image, image
 
-classes = [
-    dataset_pattern,
-]
-
-datasets = []
-
 example_image = load_file(example_image_path)
 example = tf.random.normal((steps, 4, size, size, 3))
 
-for folder in classes:
-    dataset = tf.data.Dataset.list_files(folder)
+datasets = []
+for pattern in train_pattern, val_pattern:
+    dataset = tf.data.Dataset.list_files(pattern)
     dataset = dataset.shuffle(1000).repeat()
     dataset = dataset.map(load_file).batch(batch_size).prefetch(8)
     datasets += [dataset]
+
+train_dataset, val_dataset = datasets
 
 def log_sample(epochs, logs):
     _log_sample(tf.constant(epochs, dtype='int64'))
@@ -236,7 +239,7 @@ def _log_sample(epochs):
                 tf.summary.image('step_0.75', fake * 0.5 + 0.5, epochs, 4)
         tf.summary.image('fake', fake * 0.5 + 0.5, epochs, 4)
         tf.summary.image('sample', sample * 0.5 + 0.5, epochs, 4)
-        dataset_examples = tf.stack(list(v[0][0] for v in itertools.islice(iter(datasets[0]), 4)))
+        dataset_examples = tf.stack(list(v[0][0] for v in itertools.islice(iter(train_dataset), 4)))
         tf.summary.image('dataset_example', dataset_examples * 0.5 + 0.5, epochs, 4)
 
 if __name__ == "__main__":
@@ -261,7 +264,7 @@ if __name__ == "__main__":
         shutil.copy(file, f"{logs_path}/")
     summary_writer = tf.summary.create_file_writer(logs_path)
 
-    dataset_example = next(iter(datasets[0]))[0]
+    dataset_example = next(iter(train_dataset))[0]
     loss = identity(
         dataset_example, trainer(dataset_example)
     )
@@ -273,9 +276,11 @@ if __name__ == "__main__":
     )
 
     trainer.fit(
-        datasets[0],
+        train_dataset,
+        validation_data=val_dataset,
         epochs=epochs,
         steps_per_epoch=steps_per_epoch,
+        validation_steps=steps_per_epoch//5,
         callbacks=[
             tf.keras.callbacks.LambdaCallback(
                 on_epoch_begin=log_sample,
