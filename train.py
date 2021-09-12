@@ -242,6 +242,15 @@ def _log_sample(epochs):
         dataset_examples = tf.stack(list(v[0][0] for v in itertools.islice(iter(train_dataset), 4)))
         tf.summary.image('dataset_example', dataset_examples * 0.5 + 0.5, epochs, 4)
 
+class EpochModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
+    def __init__(self, epoch_per_save=1, *args, **kwargs):
+        self.epochs_per_save = epoch_per_save
+        super().__init__(save_freq='epoch', *args, **kwargs)
+
+    def on_epoch_end(self, epoch, logs):
+        if (epoch+1) % self.epochs_per_save == 0:
+            super().on_epoch_end(epoch, logs)
+
 if __name__ == "__main__":
     name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     logs_basepath = "logs"
@@ -282,6 +291,11 @@ if __name__ == "__main__":
         steps_per_epoch=steps_per_epoch,
         validation_steps=steps_per_epoch//5,
         callbacks=[
+            EpochModelCheckpoint(
+                filepath=f'{logs_path}''/best.SavedModel',
+                save_best_only=True, monitor='val_loss', mode='min',
+                epoch_per_save=10,
+            ),
             tf.keras.callbacks.LambdaCallback(
                 on_epoch_begin=log_sample,
                 on_train_end=lambda _: log_sample(epochs, {})
