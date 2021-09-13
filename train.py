@@ -12,7 +12,7 @@ for i in range(100):
     d = val_pattern if i % 5 == 0 else train_pattern
     d.append(dataset_pattern.format(i))
 
-example_image_path = f"{dataset_path}/22/0002922.png"
+example_image_path = f"{dataset_path}/30/1250830.png"
 
 size = 256
 pixel_size = 128
