@@ -28,9 +28,12 @@ skip_mode='concat'
 
 mixed_precision = False
 
-def log_noise_schedule(r):
-    # returns standard deviation at step t/T
-    return tf.math.log(1.0 + (1.0 / 256 - 1.0) * r)
+def log_image_signal_schedule(r):
+    # an exponentially increasing signal,
+    # starting at 1px worth of information
+    image_signal_strength = (size*size)**(r-1.0)
+    # returns image signal strength at step t/T
+    return tf.math.log(image_signal_strength)
 
 gpu = tf.config.list_physical_devices('GPU')[0]
 tf.config.experimental.set_memory_growth(gpu, True)
@@ -165,15 +168,15 @@ class Trainer(tf.keras.Model):
         self.denoiser = denoiser
 
     def call(self, input):
-        log_scale = log_noise_schedule(
+        log_scale = log_image_signal_schedule(
             tf.random.uniform(tf.shape(input)[:-3])
         )[..., None, None, None]
         scale = tf.exp(log_scale)
         epsilon = tf.random.normal(tf.shape(input))
 
         noised = (
-            input * tf.sqrt(1 - tf.square(scale)) + 
-            epsilon * scale
+            input * scale + 
+            epsilon * tf.sqrt(1 - tf.square(scale))
         )
 
         fake = self.denoiser((noised, log_scale))
@@ -217,13 +220,13 @@ def _log_sample(epochs):
         fake = example[0, ...]
         log_scale = tf.math.log(1.0)
         for i in range(steps):
-            log_scale = log_noise_schedule(i / steps)
+            log_scale = log_image_signal_schedule(i / steps)
 
             epsilon = example[i, ...]
             scale = tf.exp(log_scale)
             sample = (
-                fake * tf.sqrt(1 - tf.square(scale)) + 
-                epsilon * scale
+                fake * scale + 
+                epsilon * tf.sqrt(1 - tf.square(scale))
             )
 
             log_scale = log_scale[None, None, None, None]
