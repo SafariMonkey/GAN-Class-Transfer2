@@ -194,6 +194,7 @@ def load_file(file, crop=True):
 
 example_image = load_file(example_image_path)
 example = tf.random.normal((steps, 4, size, size, 3))
+example_denoise = tf.random.normal((6, 4, size, size, 3))
 
 datasets = []
 for pattern in train_pattern, val_pattern:
@@ -210,12 +211,21 @@ def log_sample(epochs, logs):
 @tf.function(input_signature=(tf.TensorSpec((), dtype='int64'),))
 def _log_sample(epochs):
     with summary_writer.as_default():
-        identity = denoiser((
-            example_image[0][None], 
-            tf.math.log(1.0 / 256)[None, None, None, None]
-        ))
-        tf.summary.image('identity', identity * 0.5 + 0.5, epochs)
-        del identity
+
+        scales = [0.01, 0.1, 0.5, 0.9, 0.99, 1.0]
+        for i in range(len(scales)):
+            scale = scales[i]
+            sample = (
+                example_image[0] * scale + 
+                example[i, ...] * tf.sqrt(1 - tf.square(scale))
+            )
+            denoised = denoiser((
+                sample, 
+                tf.math.log(scale)[None, None, None, None]
+            ))
+            tf.summary.image(f'denoise_{scale}_input', sample * 0.5 + 0.5, epochs, 4)
+            tf.summary.image(f'denoise_{scale}_output', denoised * 0.5 + 0.5, epochs, 4)
+            del sample, denoised
 
         fake = example[0, ...]
         log_scale = tf.math.log(1.0)
