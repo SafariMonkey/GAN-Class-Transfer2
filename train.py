@@ -175,8 +175,8 @@ class Trainer(tf.keras.Model):
         epsilon = tf.random.normal(tf.shape(input))
 
         noised = (
-            input * scale + 
-            epsilon * tf.sqrt(1 - tf.square(scale))
+            input * tf.sqrt(scale) + 
+            epsilon * tf.sqrt(1 - scale)
         )
 
         fake = self.denoiser((noised, log_scale))
@@ -216,8 +216,8 @@ def _log_sample(epochs):
         for i in range(len(scales)):
             scale = scales[i]
             sample = (
-                example_image[0] * scale + 
-                example[i, ...] * tf.sqrt(1 - tf.square(scale))
+                example_image[0] * tf.sqrt(scale) + 
+                example[i, ...] * tf.sqrt(1 - scale)
             )
             denoised = denoiser((
                 sample, 
@@ -235,8 +235,8 @@ def _log_sample(epochs):
             epsilon = example[i, ...]
             scale = tf.exp(log_scale)
             sample = (
-                fake * scale + 
-                epsilon * tf.sqrt(1 - tf.square(scale))
+                fake * tf.sqrt(scale) + 
+                epsilon * tf.sqrt(1 - scale)
             )
 
             log_scale = log_scale[None, None, None, None]
