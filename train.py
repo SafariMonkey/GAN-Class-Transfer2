@@ -297,6 +297,8 @@ if __name__ == "__main__":
         identity
     )
 
+    trainer.summary()
+
     trainer.fit(
         train_dataset,
         validation_data=val_dataset,
