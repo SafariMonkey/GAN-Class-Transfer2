@@ -263,6 +263,16 @@ class EpochModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         if (epoch+1) % self.epochs_per_save == 0:
             super().on_epoch_end(epoch, logs)
 
+class LRTensorBoard(tf.keras.callbacks.TensorBoard):
+    # add other arguments to __init__ if you need
+    def __init__(self, log_dir, **kwargs):
+        super().__init__(log_dir=log_dir, **kwargs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        logs.update({'lr': tf.keras.backend.eval(self.model.optimizer.lr)})
+        super().on_epoch_end(epoch, logs)
+
 if __name__ == "__main__":
     name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     logs_basepath = "logs"
@@ -324,9 +334,9 @@ if __name__ == "__main__":
                 on_epoch_begin=log_sample,
                 on_train_end=lambda _: log_sample(epochs, {})
             ),
-            tf.keras.callbacks.TensorBoard(
+            LRTensorBoard(
                 log_dir=f'./tensorboard-callback-logs/{name}', profile_batch=5,
-            )
+            ),
             tf.keras.callbacks.ReduceLROnPlateau(
                 monitor='val_loss', factor=0.1, min_lr=1e-8, 
                 cooldown=5, patience=10, min_delta=0.001,
