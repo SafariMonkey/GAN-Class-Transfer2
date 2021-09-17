@@ -32,8 +32,10 @@ mixed_precision = False
 
 def log_image_signal_schedule(r):
     # an exponentially increasing signal,
-    # starting at 1px worth of information
-    image_signal_strength = (size*size)**(r-1.0)
+    # starting at approximately `initial_scale` squared
+    # worth of information
+    min_size = 2
+    image_signal_strength = ((size/min_size)**2)**(r-1.0)
     # returns image signal strength at step t/T
     return tf.math.log(image_signal_strength)
 
