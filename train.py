@@ -327,5 +327,9 @@ if __name__ == "__main__":
             tf.keras.callbacks.TensorBoard(
                 log_dir=f'./tensorboard-callback-logs/{name}', profile_batch=5,
             )
+            tf.keras.callbacks.ReduceLROnPlateau(
+                monitor='val_loss', factor=0.1, min_lr=1e-8, 
+                cooldown=5, patience=10, min_delta=0.001,
+            ),
         ]
     )
