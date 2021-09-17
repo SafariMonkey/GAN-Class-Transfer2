@@ -308,7 +308,8 @@ if __name__ == "__main__":
         validation_data=val_dataset,
         epochs=epochs,
         steps_per_epoch=steps_per_epoch,
-        validation_steps=steps_per_epoch//5,
+        validation_steps=steps_per_epoch,
+        validation_freq=5,
         callbacks=[
             EpochModelCheckpoint(
                 filepath=f'{logs_path}''/best.SavedModel',
