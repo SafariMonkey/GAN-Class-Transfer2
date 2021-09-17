@@ -1,5 +1,5 @@
 
-import datetime, os, shutil
+import datetime, os, shutil, stat
 import tensorflow as tf
 import itertools
 import glob
@@ -282,8 +282,13 @@ if __name__ == "__main__":
         current_path
     )
     print(f"logs: {logs_path}")
-    for file in glob.glob(f"{os.path.dirname(__file__)}/*.py"):
-        shutil.copy(file, f"{logs_path}/")
+    for file in glob.glob(f"*.py", recursive=True):
+        out_file = f"{logs_path}/{file}"
+        shutil.copyfile(file, out_file)
+        st = os.stat(file)
+        all_write = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+        os.chmod(out_file, st.st_mode & ~(all_write))
+
     summary_writer = tf.summary.create_file_writer(logs_path)
 
     dataset_example = next(iter(train_dataset))[0]
