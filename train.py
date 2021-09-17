@@ -15,7 +15,8 @@ for i in range(100):
 example_image_path = f"{dataset_path}/30/1250830.png"
 
 size = 256
-pixel_size = 128
+base_hidden_channels = 32
+min_hidden_channels = 64
 block_depth = 2
 
 batch_size = 8
@@ -35,6 +36,9 @@ def log_image_signal_schedule(r):
     image_signal_strength = (size*size)**(r-1.0)
     # returns image signal strength at step t/T
     return tf.math.log(image_signal_strength)
+
+def hidden_channels(layer):
+    return max(base_hidden_channels * 2**(layer), min_hidden_channels)
 
 gpu = tf.config.list_physical_devices('GPU')[0]
 tf.config.experimental.set_memory_growth(gpu, True)
@@ -107,15 +111,15 @@ class Encoder(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
 
-        self.rgb_dense = tf.keras.layers.Dense(pixel_size, use_bias=False)
-        self.scale_dense = tf.keras.layers.Dense(pixel_size)
-        self.output_dense = tf.keras.layers.Dense(pixel_size)
+        self.rgb_dense = tf.keras.layers.Dense(hidden_channels(0), use_bias=False)
+        self.scale_dense = tf.keras.layers.Dense(hidden_channels(0))
+        self.output_dense = tf.keras.layers.Dense(hidden_channels(0))
 
     def build(self, input_shape):
         rgb, scale = input_shape
         self.rgb_dense.build(rgb)
         self.scale_dense.build(scale)
-        self.output_dense.build([pixel_size])
+        self.output_dense.build([hidden_channels(0)])
 
     def call(self, input):
         rgb, scale = input
@@ -142,20 +146,21 @@ class Denoiser(tf.keras.Model):
         super().__init__()
 
         self.encoder = Encoder()
-        self.middle = Block(pixel_size)
-        for i in range(7):
+        layers = 7
+        self.middle = Block(hidden_channels(layers))
+        for i in range(layers):
             self.middle = Skip(tf.keras.Sequential([
                 DownShuffle(),
-                Block(pixel_size),
+                Block(hidden_channels(layers-i)),
                 self.middle, 
-                Block(pixel_size),
+                Block(hidden_channels(layers-i)),
                 UpShuffle(),
             ]), mode=skip_mode)
         self.middle = tf.keras.Sequential([
-            Block(pixel_size),
+            Block(hidden_channels(0)),
             self.middle,
-            Block(pixel_size),
-            tf.keras.layers.Dense(pixel_size, activation='relu'),
+            Block(hidden_channels(0)),
+            tf.keras.layers.Dense(hidden_channels(0), activation='relu'),
             tf.keras.layers.Dense(3),
         ])
 
