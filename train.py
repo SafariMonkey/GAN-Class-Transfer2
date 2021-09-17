@@ -17,11 +17,11 @@ example_image_path = f"{dataset_path}/30/1250830.png"
 size = 256
 base_hidden_channels = 32
 min_hidden_channels = 64
-block_depth = 2
+block_depth = 4
 
 batch_size = 8
-steps_per_epoch = 1000
-epochs = 1000
+steps_per_epoch = 3200//batch_size
+epochs = 3000
 
 steps = 20
 scales = [0.001, 0.003, 0.01, 0.03, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 0.99, 1.0]
