@@ -312,9 +312,13 @@ if __name__ == "__main__":
         validation_freq=5,
         callbacks=[
             EpochModelCheckpoint(
+                filepath=f'{logs_path}''/epoch_{epoch:02d}.SavedModel',
+                epoch_per_save=10,
+            ),
+            EpochModelCheckpoint(
                 filepath=f'{logs_path}''/best.SavedModel',
                 save_best_only=True, monitor='val_loss', mode='min',
-                epoch_per_save=10,
+                epoch_per_save=5,
             ),
             tf.keras.callbacks.LambdaCallback(
                 on_epoch_begin=log_sample,
