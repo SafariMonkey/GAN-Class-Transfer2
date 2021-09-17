@@ -49,7 +49,7 @@ if mixed_precision:
     policy = tf.keras.mixed_precision.Policy('mixed_float16')
     tf.keras.mixed_precision.experimental.set_policy(policy)
 
-optimizer = tf.keras.optimizers.Adam(1e-5)
+optimizer = tf.keras.optimizers.Nadam(1e-5)
 
 if mixed_precision:
     optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
