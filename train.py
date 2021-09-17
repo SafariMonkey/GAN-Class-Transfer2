@@ -23,6 +23,7 @@ steps_per_epoch = 1000
 epochs = 1000
 
 steps = 20
+scales = [0.001, 0.003, 0.01, 0.03, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 0.99, 1.0]
 
 skip_mode='concat'
 
@@ -194,7 +195,7 @@ def load_file(file, crop=True):
 
 example_image = load_file(example_image_path)
 example = tf.random.normal((steps, 4, size, size, 3))
-example_denoise = tf.random.normal((6, 4, size, size, 3))
+example_denoise = tf.random.normal((len(scales), 4, size, size, 3))
 
 datasets = []
 for pattern in train_pattern, val_pattern:
@@ -211,13 +212,11 @@ def log_sample(epochs, logs):
 @tf.function(input_signature=(tf.TensorSpec((), dtype='int64'),))
 def _log_sample(epochs):
     with summary_writer.as_default():
-
-        scales = [0.01, 0.1, 0.5, 0.9, 0.99, 1.0]
         for i in range(len(scales)):
             scale = scales[i]
             sample = (
                 example_image[0] * tf.sqrt(scale) + 
-                example[i, ...] * tf.sqrt(1 - scale)
+                example_denoise[i, ...] * tf.sqrt(1 - scale)
             )
             denoised = denoiser((
                 sample, 
